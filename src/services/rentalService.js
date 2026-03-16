@@ -1,0 +1,115 @@
+const CustomerModel = require('../models/customer')
+const DeviceModel = require('../models/device')
+const RentalScheduleModel = require('../models/rentalSchedule')
+const constant = require('../utils/constant/constant')
+
+const rentalService = {
+    dashboard: async () => {
+        try {
+            const stats = await RentalScheduleModel.aggregate([
+                {
+                    $group: {
+                        _id: null,
+                        // 1. Tính tổng tất cả các cột total (không phân biệt trạng thái)
+                        allTotal: { $sum: "$total" },
+                        // 2. Chỉ tính tổng những đơn có status là 'completed'
+                        completedTotal: {
+                            $sum: {
+                                $cond: [{ $eq: ["$status", "completed"] }, "$total", 0]
+                            }
+                        },
+                        count: { $sum: 1 }
+                    }
+                }
+            ]);
+            if (stats.length > 0) {
+                return stats[0];
+            }
+
+            return { allTotal: 0, completedTotal: 0, count: 0 };
+        } catch (error) {
+            throw error;
+        }
+    },
+    getAll: async () => {
+        try {
+            const rentals = await RentalScheduleModel.find().populate('deviceIds').populate('customerId').sort({ startRental: 1 })
+            return rentals
+        } catch (error) {
+            throw error
+        }
+    },
+    create: async (rentalData) => {
+        try {
+            let customer = null;
+            if (rentalData.nameCustomer || rentalData.phoneCustomer) {
+                customer = await CustomerModel.findOne({
+                    name: rentalData.nameCustomer
+                });
+                if (!customer) {
+                    customer = await CustomerModel.create({
+                        name: rentalData.nameCustomer,
+                        note: rentalData.noteCustomer
+                    });
+                }
+            }
+
+            const newRental = await RentalScheduleModel.create({
+                ...rentalData,
+                customerId: customer?._id || null,
+            });
+
+            let deviceStatus;
+            if (rentalData.status === constant.STATUS_RENTAL.rented.value) {
+                deviceStatus = constant.STATUS_DEVICE.rented.value;
+            } else if ([constant.STATUS_RENTAL.completed.value, constant.STATUS_RENTAL.canceled.value].includes(rentalData.status)) {
+                deviceStatus = constant.STATUS_DEVICE.available.value;
+            }
+
+            if (deviceStatus && rentalData.deviceId) {
+                await DeviceModel.findByIdAndUpdate(rentalData.deviceId, { status: deviceStatus });
+            }
+
+            return newRental;
+        } catch (error) {
+            throw error
+        }
+    },
+    update: async (params, rentalData) => {
+        try {
+            const updatedRental = await RentalScheduleModel.findByIdAndUpdate(params.id, rentalData, { returnDocument: 'after' })
+
+            if (rentalData.nameCustomer || rentalData.phoneCustomer) {
+                await CustomerModel.findOneAndUpdate(
+                    { name: rentalData.nameCustomer },
+                    {
+                        phone: rentalData.phoneCustomer,
+                        note: rentalData.noteCustomer
+                    },
+                    { upsert: true, returnDocument: 'after' } // Nếu không có thì tạo mới (upsert)
+                );
+            }
+
+            //Update status Device
+            let deviceStatus;
+            if (rentalData.status === constant.STATUS_RENTAL.rented.value) {
+                deviceStatus = constant.STATUS_DEVICE.rented.value;
+            } else if ([constant.STATUS_RENTAL.completed.value, constant.STATUS_RENTAL.canceled.value].includes(rentalData.status)) {
+                deviceStatus = constant.STATUS_DEVICE.available.value;
+            }
+            // Cập nhật cho TẤT CẢ thiết bị trong danh sách deviceIds
+            if (deviceStatus && rentalData.deviceIds && rentalData.deviceIds.length > 0) {
+                await DeviceModel.updateMany(
+                    { _id: { $in: rentalData.deviceIds } }, // Tìm tất cả máy có ID nằm trong mảng này
+                    { $set: { status: deviceStatus } }      // Cập nhật trạng thái mới
+                );
+            }
+
+            return updatedRental;
+        } catch (error) {
+            throw error
+        }
+    }
+}
+
+module.exports = rentalService

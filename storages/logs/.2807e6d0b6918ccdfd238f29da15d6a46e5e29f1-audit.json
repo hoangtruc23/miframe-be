@@ -1,0 +1,65 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "storages/logs/.2807e6d0b6918ccdfd238f29da15d6a46e5e29f1-audit.json",
+    "files": [
+        {
+            "date": 1772506719028,
+            "name": "storages/logs/2026-03-03-error.log",
+            "hash": "e9bac8d6d8e725cec883cb4fb88c99b405f15c1e7d5abba514989b4ea4181492"
+        },
+        {
+            "date": 1772642067125,
+            "name": "storages/logs/2026-03-04-error.log",
+            "hash": "5fef83193a449086705d13e310969687700771c5917be104f8a877ed48d8b797"
+        },
+        {
+            "date": 1772682463400,
+            "name": "storages/logs/2026-03-05-error.log",
+            "hash": "e24b19d34c5b428cd0eeeed5eead850d14f00c474a6f5b7dc66aeb59e33d8a39"
+        },
+        {
+            "date": 1772763759261,
+            "name": "storages/logs/2026-03-06-error.log",
+            "hash": "0dbe73d6f116ce2f00b01159318c22476aa85de9712638d5aa1c8a250f36329f"
+        },
+        {
+            "date": 1772867535686,
+            "name": "storages/logs/2026-03-07-error.log",
+            "hash": "3de60d4459be3ccda639eae23ad4e0a85388a6dd25a947ceb48fc0701a22724f"
+        },
+        {
+            "date": 1772953762540,
+            "name": "storages/logs/2026-03-08-error.log",
+            "hash": "4e104de5d85a97aeb51678475b6946ad568176f64f775f04f7d8b95be92c09fb"
+        },
+        {
+            "date": 1773027727790,
+            "name": "storages/logs/2026-03-09-error.log",
+            "hash": "da9e1b839388bdcd00ba6f8266fd29dac362e28ed1c6e7c825eaeb84a1af7028"
+        },
+        {
+            "date": 1773124605219,
+            "name": "storages/logs/2026-03-10-error.log",
+            "hash": "24cc1bdfe83862effa2790b65f42d11f434264d642e8b221bf3943ce3a1c060c"
+        },
+        {
+            "date": 1773284280582,
+            "name": "storages/logs/2026-03-12-error.log",
+            "hash": "f5a46cbd2e1a07adeff9fcf864934378f5546e8ddabeda392afb65405010b04e"
+        },
+        {
+            "date": 1773462054421,
+            "name": "storages/logs/2026-03-14-error.log",
+            "hash": "edd725061383aecf59ea72294eb11bd423310efe7d820edb1e45a533257194f5"
+        },
+        {
+            "date": 1773572898722,
+            "name": "storages/logs/2026-03-15-error.log",
+            "hash": "42e074d23eba23cf89cbc93ac9503dbf8738427952846eb76b775e7f0932df71"
+        }
+    ],
+    "hashType": "sha256"
+}
