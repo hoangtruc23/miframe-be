@@ -13,16 +13,16 @@ const DB_HOST = process.env.DB_HOST,
 
 const connectMongoDB = async () => {
     let reconnectTime
-    let uri = `mongodb${ATLAS_DB ? '+srv' : ''}://${LOGIN_DB}${DB_HOST}${ATLAS_DB ? '' : `:${DB_PORT}`}/${DB_NAME}`
+    let MONGO_URI = process.env.MONGO_URI || `mongodb${ATLAS_DB ? '+srv' : ''}://${LOGIN_DB}${DB_HOST}${ATLAS_DB ? '' : `:${DB_PORT}`}/${DB_NAME}`
     try {
-        await mongoose.connect(uri, {
+        await mongoose.connect(MONGO_URI, {
             serverSelectionTimeoutMS: 10000,
             socketTimeoutMS: 45000,
         })
         logger.info('MongoDB connected!')
         clearTimeout(reconnectTime)
     } catch (error) {
-        logger.error(`----URI: ${uri}`)
+        logger.error(`----MONGO_URI: ${MONGO_URI}`)
         logger.error(`Error connect MongoDB: ${error}`)
         reconnectTime = setTimeout(() => {
             try {
