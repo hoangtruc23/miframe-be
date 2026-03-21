@@ -31,9 +31,14 @@ const rentalService = {
             throw error;
         }
     },
-    getAll: async () => {
+    getAll: async (query) => {
         try {
-            const rentals = await RentalScheduleModel.find().populate('deviceIds').populate('customerId').sort({ startRental: 1 })
+            const { status } = query
+            let queryCondition = {};
+            if (status && status !== '') {
+                queryCondition.status = status;
+            }
+            const rentals = await RentalScheduleModel.find(queryCondition).populate('deviceIds').populate('customerId').sort({ startRental: 1 })
             return rentals
         } catch (error) {
             throw error
@@ -59,6 +64,7 @@ const rentalService = {
                 customerId: customer?._id || null,
             });
 
+            //Update status Device
             let deviceStatus;
             if (rentalData.status === constant.STATUS_RENTAL.rented.value) {
                 deviceStatus = constant.STATUS_DEVICE.rented.value;
@@ -66,8 +72,12 @@ const rentalService = {
                 deviceStatus = constant.STATUS_DEVICE.available.value;
             }
 
-            if (deviceStatus && rentalData.deviceId) {
-                await DeviceModel.findByIdAndUpdate(rentalData.deviceId, { status: deviceStatus });
+            // Cập nhật cho TẤT CẢ thiết bị trong danh sách deviceIds
+            if (deviceStatus && rentalData.deviceIds) {
+                const res = await DeviceModel.updateMany(
+                    { _id: { $in: rentalData.deviceIds } }, // Tìm tất cả máy có ID nằm trong mảng này
+                    { $set: { status: deviceStatus } }      // Cập nhật trạng thái mới
+                );
             }
 
             return newRental;
@@ -97,9 +107,10 @@ const rentalService = {
             } else if ([constant.STATUS_RENTAL.completed.value, constant.STATUS_RENTAL.canceled.value].includes(rentalData.status)) {
                 deviceStatus = constant.STATUS_DEVICE.available.value;
             }
+
             // Cập nhật cho TẤT CẢ thiết bị trong danh sách deviceIds
-            if (deviceStatus && rentalData.deviceIds && rentalData.deviceIds.length > 0) {
-                await DeviceModel.updateMany(
+            if (deviceStatus && rentalData.deviceIds) {
+                const res = await DeviceModel.updateMany(
                     { _id: { $in: rentalData.deviceIds } }, // Tìm tất cả máy có ID nằm trong mảng này
                     { $set: { status: deviceStatus } }      // Cập nhật trạng thái mới
                 );

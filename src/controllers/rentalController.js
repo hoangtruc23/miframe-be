@@ -12,7 +12,7 @@ const rentalController = {
     },
     getAll: async (req, res, next) => {
         try {
-            const result = await rentalService.getAll()
+            const result = await rentalService.getAll(req.query)
             return res.status(200).json(response.success(result))
         } catch (error) {
             next(error)
