@@ -18,6 +18,14 @@ const rentalController = {
             next(error)
         }
     },
+    getRentalToday: async (req, res, next) => {
+        try {
+            const result = await rentalService.getRentalToday()
+            return res.status(200).json(response.success(result))
+        } catch (error) {
+            next(error)
+        }
+    },
     create: async (req, res, next) => {
         try {
             const result = await rentalService.create(req.body)
@@ -30,6 +38,14 @@ const rentalController = {
     update: async (req, res, next) => {
         try {
             const result = await rentalService.update(req.params, req.body)
+            return res.status(200).json(response.success(result))
+        } catch (error) {
+            next(error)
+        }
+    },
+    delete: async (req, res, next) => {
+        try {
+            const result = await rentalService.delete(req.params)
             return res.status(200).json(response.success(result))
         } catch (error) {
             next(error)

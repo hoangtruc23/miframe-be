@@ -44,6 +44,42 @@ const rentalService = {
             throw error
         }
     },
+    getRentalToday: async () => {
+        try {
+            const startOfDay = new Date();
+            startOfDay.setHours(0, 0, 0, 0);
+
+            const endOfDay = new Date();
+            endOfDay.setHours(23, 59, 59, 999);
+
+            const queryCondition = {
+                $or: [
+                    {
+                        startRental: {
+                            $gte: startOfDay,
+                            $lte: endOfDay
+                        }
+                    },
+                    {
+                        endRental: {
+                            $gte: startOfDay,
+                            $lte: endOfDay
+                        }
+                    }
+                ]
+            };
+            const rentals = await RentalScheduleModel.find(queryCondition)
+                .populate('deviceIds',)
+                .populate('customerId', 'name email')
+                .sort({ startRental: 1 })
+                .lean();
+
+            return rentals;
+        } catch (error) {
+            console.error("Lỗi khi lấy lịch hôm nay:", error);
+            throw error;
+        }
+    },
     create: async (rentalData) => {
         try {
             let customer = null;
@@ -117,6 +153,15 @@ const rentalService = {
             }
 
             return updatedRental;
+        } catch (error) {
+            throw error
+        }
+    },
+    delete: async (params) => {
+        try {
+            const { id } = params
+            const result = await RentalScheduleModel.findByIdAndDelete(id)
+            return result;
         } catch (error) {
             throw error
         }
