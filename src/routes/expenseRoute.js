@@ -4,6 +4,6 @@ const router = express.Router()
 
 router.get('/getAll', expenseController.getAll)
 router.post('/create', expenseController.create)
-// router.put('/update/:id', expenseController.update)
+router.put('/update/:id', expenseController.update)
 
 module.exports = router

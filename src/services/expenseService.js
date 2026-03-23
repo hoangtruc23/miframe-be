@@ -24,6 +24,15 @@ const expenseService = {
             throw error
         }
     },
+    update: async (params, data) => {
+        try {
+            const { id } = params
+            const result = await ExpenseModel.findByIdAndUpdate(id, data)
+            return result
+        } catch (error) {
+            throw error
+        }
+    },
 }
 
 module.exports = expenseService
