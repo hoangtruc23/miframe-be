@@ -66,7 +66,8 @@ const rentalService = {
                             $lte: endOfDay
                         }
                     }
-                ]
+                ],
+                status: { $ne: 'completed' }
             };
             const rentals = await RentalScheduleModel.find(queryCondition)
                 .populate('deviceIds',)
