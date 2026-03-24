@@ -8,7 +8,7 @@ const expenseService = {
             // if (status && status !== '') {
             //     queryCondition.status = status;
             // }
-            const rentals = await ExpenseModel.find(queryCondition)
+            const rentals = await ExpenseModel.find(queryCondition).sort({ description: 1 })
             return rentals
         } catch (error) {
             throw error
