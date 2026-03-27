@@ -4,30 +4,103 @@ const RentalScheduleModel = require('../models/rentalSchedule')
 const constant = require('../utils/constant/constant')
 
 const rentalService = {
-    dashboard: async () => {
+    dashboard: async (query) => {
         try {
+            const { month, year } = query;
+            const targetMonth = parseInt(month);
+            const targetYear = parseInt(year);
+            const REVENUE_TARGET = 20000000;
+
             const stats = await RentalScheduleModel.aggregate([
                 {
-                    $group: {
-                        _id: null,
-                        // 1. Tính tổng tất cả các cột total (không phân biệt trạng thái)
-                        allTotal: { $sum: "$total" },
-                        // 2. Chỉ tính tổng những đơn có status là 'completed'
-                        completedTotal: {
-                            $sum: {
-                                $cond: [{ $eq: ["$status", "completed"] }, "$total", 0]
+                    $match: {
+                        status: { $ne: "cancelled" },
+                        startRental: { $exists: true, $ne: null }
+                    }
+                },
+                {
+                    $facet: {
+                        "monthlyStats": [
+                            {
+                                $group: {
+                                    _id: {
+                                        year: { $year: "$startRental" },
+                                        month: { $month: "$startRental" }
+                                    },
+                                    total: { $sum: "$total" },
+                                    // Số tiền thực tế thu (đơn đã hoàn thành)
+                                    actualCollected: {
+                                        $sum: {
+                                            $cond: [{ $eq: ["$status", "completed"] }, "$total", 0]
+                                        }
+                                    }
+                                }
+                            },
+                            // Sắp xếp theo thời gian để dùng cho filter currentMonth/Year
+                            { $sort: { "_id.year": -1, "_id.month": -1 } }
+                        ],
+                    }
+                },
+                {
+                    $project: {
+                        currentMonth: {
+                            $filter: {
+                                input: "$monthlyStats",
+                                as: "item",
+                                cond: {
+                                    $and: [
+                                        { $eq: ["$$item._id.month", targetMonth] },
+                                        { $eq: ["$$item._id.year", targetYear] }
+                                    ]
+                                }
                             }
                         },
-                        count: { $sum: 1 }
+                        currentYear: {
+                            $filter: {
+                                input: "$monthlyStats",
+                                as: "item",
+                                cond: { $eq: ["$$item._id.year", targetYear] }
+                            }
+                        },
+                        // TẠO THÊM TRƯỜNG NÀY: Sắp xếp lại monthlyStats theo total để tìm tháng cao nhất
+                        highestMonthStats: {
+                            $sortArray: { input: "$monthlyStats", sortBy: { total: -1 } }
+                        },
+                        monthlyStats: 1
+                    }
+                },
+                {
+                    $project: {
+                        currentMonth: 1,
+                        currentYear: 1,
+                        monthlyStats: 1,
+                        // Lấy phần tử đầu tiên của mảng đã sort theo total
+                        highestMonth: { $arrayElemAt: ["$highestMonthStats", 0] }
                     }
                 }
             ]);
-            if (stats.length > 0) {
-                return stats[0];
-            }
 
-            return { allTotal: 0, completedTotal: 0, count: 0 };
+            const result = stats[0];
+
+            // Tính toán số liệu
+            const monthTotal = result.currentMonth[0]?.total || 0;
+            const monthActual = result.currentMonth[0]?.actualCollected || 0;
+
+            const yearTotal = result.currentYear.reduce((acc, curr) => acc + curr.total, 0);
+            const yearActual = result.currentYear.reduce((acc, curr) => acc + curr.actualCollected, 0);
+
+            const targetPercent = (monthTotal / REVENUE_TARGET) * 100;
+
+            return {
+                monthTotal,
+                monthActual,
+                yearTotal,
+                yearActual,
+                highestMonth: result.highestMonth, // Trả về { _id: {year, month}, total, actualCollected }
+                targetPercent: targetPercent.toFixed(2),
+            };
         } catch (error) {
+            console.error("Dashboard Error:", error);
             throw error;
         }
     },
@@ -35,7 +108,9 @@ const rentalService = {
         try {
             const { status } = query
             let queryCondition = {};
-            if (status && status !== '') {
+            if (status === 'active') {
+                queryCondition.status = { $ne: "completed" };
+            } else if (status && status !== '') {
                 queryCondition.status = status;
             }
             const rentals = await RentalScheduleModel.find(queryCondition).populate('deviceIds').populate('customerId').sort({ startRental: 1 })
