@@ -17,6 +17,10 @@ const customerSchema = new Schema({
         type: String,
         required: false,
     },
+    times: {
+        type: Number,
+        default: 1
+    },
     note: { //Ghi chú khách hàng
         type: String,
         required: false,

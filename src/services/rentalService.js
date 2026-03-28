@@ -74,7 +74,6 @@ const rentalService = {
                         currentMonth: 1,
                         currentYear: 1,
                         monthlyStats: 1,
-                        // Lấy phần tử đầu tiên của mảng đã sort theo total
                         highestMonth: { $arrayElemAt: ["$highestMonthStats", 0] }
                     }
                 }
@@ -89,7 +88,7 @@ const rentalService = {
             const yearTotal = result.currentYear.reduce((acc, curr) => acc + curr.total, 0);
             const yearActual = result.currentYear.reduce((acc, curr) => acc + curr.actualCollected, 0);
 
-            const targetPercent = (monthTotal / REVENUE_TARGET) * 100;
+            const targetPercent = (monthActual / REVENUE_TARGET) * 100;
 
             return {
                 monthTotal,
@@ -159,16 +158,22 @@ const rentalService = {
     create: async (rentalData) => {
         try {
             let customer = null;
-            if (rentalData.nameCustomer || rentalData.phoneCustomer) {
-                customer = await CustomerModel.findOne({
-                    name: rentalData.nameCustomer
-                });
-                if (!customer) {
-                    customer = await CustomerModel.create({
-                        name: rentalData.nameCustomer,
-                        note: rentalData.noteCustomer
-                    });
-                }
+            if (rentalData.nameCustomer) {
+                customer = await CustomerModel.findOneAndUpdate(
+                    { name: rentalData.nameCustomer }, // Filter
+                    {
+                        $inc: { times: 1 },             // Increment "times" by 1
+                        $setOnInsert: {                 // Fields set ONLY if creating new
+                            note: rentalData.noteCustomer
+                        }
+                    },
+                    {
+                        new: true,
+                        upsert: true // Create it if it doesn't exist
+                    }
+                );
+
+                console.log(customer)
             }
 
             const newRental = await RentalScheduleModel.create({
@@ -186,7 +191,7 @@ const rentalService = {
 
             // Cập nhật cho TẤT CẢ thiết bị trong danh sách deviceIds
             if (deviceStatus && rentalData.deviceIds) {
-                const res = await DeviceModel.updateMany(
+                await DeviceModel.updateMany(
                     { _id: { $in: rentalData.deviceIds } }, // Tìm tất cả máy có ID nằm trong mảng này
                     { $set: { status: deviceStatus } }      // Cập nhật trạng thái mới
                 );
@@ -222,13 +227,13 @@ const rentalService = {
 
             // Cập nhật cho TẤT CẢ thiết bị trong danh sách deviceIds
             if (deviceStatus && rentalData.deviceIds) {
-                const res = await DeviceModel.updateMany(
+                await DeviceModel.updateMany(
                     { _id: { $in: rentalData.deviceIds } }, // Tìm tất cả máy có ID nằm trong mảng này
                     { $set: { status: deviceStatus } }      // Cập nhật trạng thái mới
                 );
             }
 
-            return updatedRental;
+            return null;
         } catch (error) {
             throw error
         }
