@@ -1,3 +1,4 @@
+const moment = require('moment-timezone');
 const CustomerModel = require('../models/customer')
 const DeviceModel = require('../models/device')
 const RentalScheduleModel = require('../models/rentalSchedule')
@@ -164,7 +165,8 @@ const rentalService = {
                     {
                         $inc: { times: 1 },             // Increment "times" by 1
                         $setOnInsert: {                 // Fields set ONLY if creating new
-                            note: rentalData.noteCustomer
+                            note: rentalData.noteCustomer,
+                            phone: rentalData.phoneCustomer
                         }
                     },
                     {
@@ -176,10 +178,18 @@ const rentalService = {
                 console.log(customer)
             }
 
-            const newRental = await RentalScheduleModel.create({
+            const formattedData = {
                 ...rentalData,
+                startRental: moment.tz(rentalData.startRental, "Asia/Ho_Chi_Minh").toDate(),
+                endRental: moment.tz(rentalData.endRental, "Asia/Ho_Chi_Minh").toDate(),
+            };
+
+            const newRental = await RentalScheduleModel.create({
+                ...formattedData,
                 customerId: customer?._id || null,
             });
+
+
 
             //Update status Device
             let deviceStatus;
@@ -204,7 +214,15 @@ const rentalService = {
     },
     update: async (params, rentalData) => {
         try {
-            const updatedRental = await RentalScheduleModel.findByIdAndUpdate(params.id, rentalData, { returnDocument: 'after' })
+            const updateFields = { ...rentalData };
+            if (rentalData.startRental) {
+                updateFields.startRental = moment.tz(rentalData.startRental, "Asia/Ho_Chi_Minh").toDate();
+            }
+            if (rentalData.endRental) {
+                updateFields.endRental = moment.tz(rentalData.endRental, "Asia/Ho_Chi_Minh").toDate();
+            }
+
+            await RentalScheduleModel.findByIdAndUpdate(params.id, updateFields, { returnDocument: 'after' })
 
             if (rentalData.nameCustomer || rentalData.phoneCustomer) {
                 await CustomerModel.findOneAndUpdate(
