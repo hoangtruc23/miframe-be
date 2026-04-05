@@ -39,7 +39,7 @@ const deviceService = {
             // Bước 3: Tìm các thiết bị KHÔNG nằm trong danh sách bận và KHÔNG phải máy đã bán
             const availableDevices = await DeviceModel.find({
                 _id: { $nin: busyDeviceIds },
-                status: { $ne: 'sold' }
+                status: { $nin: ['sold', 'maintenance'] }
             });
 
             return availableDevices

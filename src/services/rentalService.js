@@ -90,6 +90,7 @@ const rentalService = {
             const yearActual = result.currentYear.reduce((acc, curr) => acc + curr.actualCollected, 0);
 
             const targetPercent = (monthActual / REVENUE_TARGET) * 100;
+            const targetTotal = (monthTotal / REVENUE_TARGET) * 100;
 
             return {
                 monthTotal,
@@ -98,6 +99,7 @@ const rentalService = {
                 yearActual,
                 highestMonth: result.highestMonth, // Trả về { _id: {year, month}, total, actualCollected }
                 targetPercent: targetPercent.toFixed(2),
+                targetTotal: targetTotal.toFixed(2),
             };
         } catch (error) {
             console.error("Dashboard Error:", error);

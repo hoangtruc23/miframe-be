@@ -13,8 +13,8 @@ const DB_HOST = process.env.DB_HOST,
 
 const connectMongoDB = async () => {
     let reconnectTime
-    let MONGO_URI = process.env.MONGO_URI || `mongodb${ATLAS_DB ? '+srv' : ''}://${LOGIN_DB}${DB_HOST}${ATLAS_DB ? '' : `:${DB_PORT}`}/${DB_NAME}`
-    // let MONGO_URI = "mongodb+srv://hoangbaotruc19:TrucAdmin2026@miframe-be.uvlc0ve.mongodb.net/?appName=miframe-be"
+    // let MONGO_URI = process.env.MONGO_URI || `mongodb${ATLAS_DB ? '+srv' : ''}://${LOGIN_DB}${DB_HOST}${ATLAS_DB ? '' : `:${DB_PORT}`}/${DB_NAME}`
+    let MONGO_URI = "mongodb+srv://hoangbaotruc19:TrucAdmin2026@miframe-be.uvlc0ve.mongodb.net/?appName=miframe-be"
     try {
         await mongoose.connect(MONGO_URI, {
             serverSelectionTimeoutMS: 10000,
