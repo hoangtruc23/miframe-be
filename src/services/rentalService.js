@@ -187,8 +187,6 @@ const rentalService = {
                         upsert: true // Create it if it doesn't exist
                     }
                 );
-
-                console.log(customer)
             }
 
             const formattedData = {
