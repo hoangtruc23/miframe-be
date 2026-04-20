@@ -6,7 +6,8 @@ const deviceService = {
     getAll: async (query) => {
         try {
             const { status } = query
-            const devices = await DeviceModel.find({ status: status || { $in: ['available', 'rented', 'maintenance'] } }).sort({ name: 1 });
+            // const devices = await DeviceModel.find({ status: status || { $in: ['available', 'rented', 'maintenance'] } }).sort({ name: 1 });
+            const devices = await DeviceModel.find({ status: status || { $in: ['available', 'rented', 'maintenance', 'sold'] } }).sort({ name: 1 });
             return devices
         } catch (error) {
             throw new Error('Failed to fetch devices')
@@ -58,12 +59,19 @@ const deviceService = {
             throw new Error(error.message)
         }
     },
-
     update: async (params, deviceData) => {
         try {
             const updatedDevice = await DeviceModel.findByIdAndUpdate(params.id, deviceData, { returnDocument: 'after' })
             const updateRentalInfo = await RentalInfoModel.findOneAndUpdate({ deviceId: params.id }, { price: deviceData.price, status: deviceData.status }, { returnDocument: 'after' })
             return { updatedDevice, updateRentalInfo }
+        } catch (error) {
+            throw new Error(error.message)
+        }
+    },
+    delete: async (params) => {
+        try {
+            const updatedDevice = await DeviceModel.findByIdAndDelete(params.id)
+            return updatedDevice
         } catch (error) {
             throw new Error(error.message)
         }

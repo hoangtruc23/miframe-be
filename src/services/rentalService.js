@@ -108,14 +108,25 @@ const rentalService = {
     },
     getAll: async (query) => {
         try {
-            const { status } = query
+            const { status, phone } = query
             let queryCondition = {};
             if (status === 'active') {
                 queryCondition.status = { $ne: "completed" };
             } else if (status && status !== '') {
                 queryCondition.status = status;
             }
-            const rentals = await RentalScheduleModel.find(queryCondition).populate('deviceIds').populate('customerId').sort({ startRental: 1 })
+            if (phone) {
+                const customers = await CustomerModel.find({
+                    phone: { $regex: '^' + phone }
+                }).select('_id');
+                const customerIds = customers.map(c => c._id);
+                queryCondition.customerId = { $in: customerIds };
+            }
+            const rentals = await RentalScheduleModel.find(queryCondition)
+                .populate('deviceIds')
+                .populate('customerId')
+                .sort({ startRental: 1 });
+
             return rentals
         } catch (error) {
             throw error

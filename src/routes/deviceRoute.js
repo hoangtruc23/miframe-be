@@ -6,5 +6,6 @@ router.get('/getAll', deviceController.getAll)
 router.get('/getAvailableDevices', deviceController.getAvailableDevices)
 router.post('/create', deviceController.create)
 router.put('/update/:id', deviceController.update)
+router.get('/delete/:id', deviceController.delete)
 
 module.exports = router
