@@ -108,12 +108,15 @@ const rentalService = {
     },
     getAll: async (query) => {
         try {
-            const { status, phone } = query
+            const { status, modelDevice, phone } = query
             let queryCondition = {};
             if (status === 'active') {
                 queryCondition.status = { $ne: "completed" };
             } else if (status && status !== '') {
                 queryCondition.status = status;
+            }
+            if (modelDevice) {
+                queryCondition.modelDevice = modelDevice;
             }
             if (phone) {
                 const customers = await CustomerModel.find({

@@ -7,10 +7,18 @@ const deviceService = {
         try {
             const { status } = query
             // const devices = await DeviceModel.find({ status: status || { $in: ['available', 'rented', 'maintenance'] } }).sort({ name: 1 });
-            const devices = await DeviceModel.find({ status: status || { $in: ['available', 'rented', 'maintenance', 'sold'] } }).sort({ name: 1 });
+            const devices = await DeviceModel.find({ status: status || { $in: ['available', 'rented', 'maintenance', 'sold'] } }).sort({ name: 1 }).populate('modelId');
             return devices
         } catch (error) {
             throw new Error('Failed to fetch devices')
+        }
+    },
+    getAllModelDevice: async () => {
+        try {
+            const models = await DeviceModel.distinct('model')
+            return models
+        } catch (error) {
+            throw new Error('Failed to fetch device models')
         }
     },
     getAvailableDevices: async (query) => {
@@ -61,6 +69,7 @@ const deviceService = {
     },
     update: async (params, deviceData) => {
         try {
+            console.log(deviceData)
             const updatedDevice = await DeviceModel.findByIdAndUpdate(params.id, deviceData, { returnDocument: 'after' })
             const updateRentalInfo = await RentalInfoModel.findOneAndUpdate({ deviceId: params.id }, { price: deviceData.price, status: deviceData.status }, { returnDocument: 'after' })
             return { updatedDevice, updateRentalInfo }

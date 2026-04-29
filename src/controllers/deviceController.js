@@ -10,6 +10,14 @@ const deviceController = {
             next(error)
         }
     },
+    getAllModelDevice: async (req, res, next) => {
+        try {
+            const result = await deviceService.getAllModelDevice()
+            return res.status(200).json(response.success(result))
+        } catch (error) {
+            next(error)
+        }
+    },
     getAvailableDevices: async (req, res, next) => {
         try {
             const result = await deviceService.getAvailableDevices(req.query)

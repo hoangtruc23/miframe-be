@@ -5,8 +5,9 @@ const deviceSchema = new Schema({
         type: String,
         required: false,
     },
-    model: { //Loại máy
-        type: String,
+    modelId: { //Loại máy
+        type: Types.ObjectId,
+        ref: 'modelDevices',
         required: true,
     },
     code: { //Số seriel máy
