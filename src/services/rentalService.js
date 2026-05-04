@@ -116,7 +116,12 @@ const rentalService = {
                 queryCondition.status = status;
             }
             if (modelDevice) {
-                queryCondition.modelDevice = modelDevice;
+                // Bước 1: Tìm tất cả thiết bị thuộc modelDevice này
+                const matchedDevices = await DeviceModel.find({ modelId: modelDevice }).select('_id');
+                const matchedDeviceIds = matchedDevices.map(d => d._id);
+
+                // Bước 2: Chỉ lấy các đơn thuê có chứa ít nhất 1 trong các deviceIds đã tìm được
+                queryCondition.deviceIds = { $in: matchedDeviceIds };
             }
             if (phone) {
                 const customers = await CustomerModel.find({
@@ -202,8 +207,6 @@ const rentalService = {
                 ...formattedData,
                 customerId: customer?._id || null,
             });
-
-
 
             //Update status Device
             let deviceStatus;

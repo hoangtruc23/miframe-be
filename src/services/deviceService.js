@@ -1,4 +1,5 @@
-const DeviceModel = require("../models/device")
+const DeviceModel = require("../models/device");
+const ModelDevice = require("../models/modelDevice");
 const RentalInfoModel = require("../models/rentalInfo");
 const RentalScheduleModel = require("../models/rentalSchedule");
 
@@ -15,7 +16,8 @@ const deviceService = {
     },
     getAllModelDevice: async () => {
         try {
-            const models = await DeviceModel.distinct('model')
+            // const models = await DeviceModel.distinct('model')
+            const models = await ModelDevice.find()
             return models
         } catch (error) {
             throw new Error('Failed to fetch device models')

@@ -31,6 +31,10 @@ const rentalScheduleSchema = new Schema({
         type: Number,
         required: true,
     },
+    depositPaid: { //Đã chuyển khoản
+        type: Number,
+        required: false,
+    },
     status: {
         type: String,
         required: true,
