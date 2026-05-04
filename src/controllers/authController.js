@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken')
 
-const authService = require('../services/authService')
 const response = require('../utils/response/response')
-const { envConfig } = require('../config/envConfg')
+// const { envConfig } = require('../config/envConfg')
+const authService = require('../services/authService')
 
 const authController = {
     login: async (req, res, next) => {
@@ -34,19 +34,19 @@ const authController = {
             next(error)
         }
     },
-    logout: async (req, res, next) => {
-        try {
-            const token = req.headers.authorization?.split(' ')[1]
-            const payloadToken = jwt.verify(
-                token,
-                envConfig.JWT_ACCESS_TOKEN_PRIVATE_KEY,
-            )
-            const logout = await authService.logout(payloadToken)
-            return res.status(200).json(response.success(logout))
-        } catch (error) {
-            next(error)
-        }
-    },
+    // logout: async (req, res, next) => {
+    //     try {
+    //         const token = req.headers.authorization?.split(' ')[1]
+    //         const payloadToken = jwt.verify(
+    //             token,
+    //             envConfig.JWT_ACCESS_TOKEN_PRIVATE_KEY,
+    //         )
+    //         const logout = await authService.logout(payloadToken)
+    //         return res.status(200).json(response.success(logout))
+    //     } catch (error) {
+    //         next(error)
+    //     }
+    // },
 }
 
 module.exports = authController

@@ -163,11 +163,11 @@ const rentalService = {
                         }
                     }
                 ],
-                status: { $ne: 'completed' }
+                status: { $nin: ['completed'] }
             };
             const rentals = await RentalScheduleModel.find(queryCondition)
                 .populate('deviceIds',)
-                .populate('customerId', 'name email')
+                .populate('customerId', 'name email phone')
                 .sort({ startRental: 1 })
                 .lean();
 

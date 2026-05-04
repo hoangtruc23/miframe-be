@@ -1,11 +1,13 @@
 const express = require('express')
 const router = express.Router()
+const authRoute = require('./authRoute')
 const deviceRoute = require('./deviceRoute')
 const rentalRoute = require('./rentalRoute')
 const expenseRoute = require('./expenseRoute')
 const customerRoute = require('./customerRoute')
 const modelRoute = require('./modelRoute')
 
+router.use('/auth', authRoute)
 router.use('/device', deviceRoute)
 router.use('/rental', rentalRoute)
 router.use('/expense', expenseRoute)
