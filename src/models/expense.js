@@ -9,6 +9,10 @@ const expenseSchema = new Schema({
         type: Number,
         required: true,
     },
+    datePaid: {
+        type: Date,
+        required: false,
+    },
     note: {
         type: String,
         required: false,

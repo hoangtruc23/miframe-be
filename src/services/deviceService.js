@@ -6,9 +6,18 @@ const RentalScheduleModel = require("../models/rentalSchedule");
 const deviceService = {
     getAll: async (query) => {
         try {
-            const { status } = query
+            const filter = {}
+            const { status, modelDevice } = query
+
+
+            if (status) {
+                filter.status = status
+            }
+            if (modelDevice) {
+                filter.modelId = modelDevice
+            }
             // const devices = await DeviceModel.find({ status: status || { $in: ['available', 'rented', 'maintenance'] } }).sort({ name: 1 });
-            const devices = await DeviceModel.find({ status: status || { $in: ['available', 'rented', 'maintenance', 'sold'] } }).sort({ name: 1 }).populate('modelId');
+            const devices = await DeviceModel.find(filter).sort({ name: 1 }).populate('modelId');
             return devices
         } catch (error) {
             throw new Error('Failed to fetch devices')
