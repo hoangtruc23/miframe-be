@@ -130,12 +130,46 @@ const rentalService = {
                 const customerIds = customers.map(c => c._id);
                 queryCondition.customerId = { $in: customerIds };
             }
-            const rentals = await RentalScheduleModel.find(queryCondition)
-                .populate('deviceIds')
-                .populate('customerId')
-                .sort({ startRental: 1 });
 
-            return rentals
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
+            const endOfToday = new Date();
+            endOfToday.setHours(23, 59, 59, 999);
+
+            const rentals = await RentalScheduleModel.aggregate([
+                { $match: queryCondition },
+                {
+                    $addFields: {
+                        // 1. Xác định các flag (đúng/sai) cho sự kiện hôm nay
+                        isStartToday: {
+                            $and: [{ $gte: ["$startRental", startOfToday] }, { $lte: ["$startRental", endOfToday] }]
+                        },
+                        isEndToday: {
+                            $and: [{ $gte: ["$endRental", startOfToday] }, { $lte: ["$endRental", endOfToday] }]
+                        }
+                    }
+                },
+                {
+                    $addFields: {
+                        // 2. Nếu là hôm nay (start hoặc end) thì priority = 0
+                        priority: {
+                            $cond: { if: { $or: ["$isStartToday", "$isEndToday"] }, then: 0, else: 1 }
+                        },
+                    }
+                },
+                {
+                    $sort: {
+                        priority: 1,
+                        startRental: 1
+                    }
+                }
+            ]);
+
+            const populatedRentals = await RentalScheduleModel.populate(rentals, [
+                { path: 'deviceIds' },
+                { path: 'customerId' }
+            ]);
+            return populatedRentals;
         } catch (error) {
             throw error
         }
