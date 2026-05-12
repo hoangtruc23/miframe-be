@@ -10,36 +10,76 @@ const rentalService = {
             const { month, year } = query;
             const targetMonth = parseInt(month);
             const targetYear = parseInt(year);
-            const REVENUE_TARGET = 20000000;
+
+
+            //TÍNH KPI THEO SỐ DEVICE
+            const deviceLength = await DeviceModel.countDocuments({ status: { $ne: 'sold' } });
+            const REVENUE_TARGET = (150000 * deviceLength) * 15; // 15 ngày
 
             const stats = await RentalScheduleModel.aggregate([
                 {
                     $match: {
                         status: { $ne: "cancelled" },
-                        startRental: { $exists: true, $ne: null }
+                        startRental: { $exists: true, $ne: null },
+                        endRental: { $exists: true, $ne: null }
                     }
                 },
                 {
+                    // Bước 1: Tính số ngày và đơn giá mỗi ngày
+                    $addFields: {
+                        duration: {
+                            $max: [
+                                1,
+                                { $dateDiff: { startDate: "$startRental", endDate: "$endRental", unit: "day" } }
+                            ]
+                        },
+                        // Nếu endRental cùng ngày startRental thì tính là 1 ngày để tránh chia cho 0
+                    }
+                },
+                {
+                    $addFields: {
+                        dailyRevenue: { $divide: ["$total", "$duration"] }
+                    }
+                },
+                {
+                    // Bước 2: Tạo mảng các ngày thuê (mỗi phần tử là index 0, 1, 2...)
+                    $addFields: {
+                        daysArray: { $range: [0, "$duration"] }
+                    }
+                },
+                { $unwind: "$daysArray" },
+                {
+                    // Bước 3: Tính toán ngày cụ thể cho từng "mảnh" doanh thu
+                    $addFields: {
+                        specificDate: {
+                            $dateAdd: {
+                                startDate: "$startRental",
+                                unit: "day",
+                                amount: "$daysArray"
+                            }
+                        }
+                    }
+                },
+                {
+                    // Bước 4: Nhóm lại theo tháng/năm của từng ngày đã phân bổ
                     $facet: {
                         "monthlyStats": [
                             {
                                 $group: {
                                     _id: {
-                                        year: { $year: "$startRental" },
-                                        month: { $month: "$startRental" }
+                                        year: { $year: "$specificDate" },
+                                        month: { $month: "$specificDate" }
                                     },
-                                    total: { $sum: "$total" },
-                                    // Số tiền thực tế thu (đơn đã hoàn thành)
+                                    total: { $sum: "$dailyRevenue" },
                                     actualCollected: {
                                         $sum: {
-                                            $cond: [{ $eq: ["$status", "completed"] }, "$total", 0]
+                                            $cond: [{ $eq: ["$status", "completed"] }, "$dailyRevenue", 0]
                                         }
                                     }
                                 }
                             },
-                            // Sắp xếp theo thời gian để dùng cho filter currentMonth/Year
                             { $sort: { "_id.year": -1, "_id.month": -1 } }
-                        ],
+                        ]
                     }
                 },
                 {
@@ -63,7 +103,6 @@ const rentalService = {
                                 cond: { $eq: ["$$item._id.year", targetYear] }
                             }
                         },
-                        // TẠO THÊM TRƯỜNG NÀY: Sắp xếp lại monthlyStats theo total để tìm tháng cao nhất
                         highestMonthStats: {
                             $sortArray: { input: "$monthlyStats", sortBy: { total: -1 } }
                         },
@@ -82,24 +121,20 @@ const rentalService = {
 
             const result = stats[0];
 
-            // Tính toán số liệu
             const monthTotal = result.currentMonth[0]?.total || 0;
             const monthActual = result.currentMonth[0]?.actualCollected || 0;
 
             const yearTotal = result.currentYear.reduce((acc, curr) => acc + curr.total, 0);
             const yearActual = result.currentYear.reduce((acc, curr) => acc + curr.actualCollected, 0);
 
-            const targetPercent = (monthActual / REVENUE_TARGET) * 100;
-            const targetTotal = (monthTotal / REVENUE_TARGET) * 100;
-
             return {
-                monthTotal,
-                monthActual,
-                yearTotal,
-                yearActual,
-                highestMonth: result.highestMonth, // Trả về { _id: {year, month}, total, actualCollected }
-                targetPercent: targetPercent.toFixed(2),
-                targetTotal: targetTotal.toFixed(2),
+                monthTotal: Math.round(monthTotal),
+                monthActual: Math.round(monthActual),
+                yearTotal: Math.round(yearTotal),
+                yearActual: Math.round(yearActual),
+                highestMonth: result.highestMonth,
+                targetPercent: ((monthActual / REVENUE_TARGET) * 100).toFixed(2),
+                targetTotal: ((monthTotal / REVENUE_TARGET) * 100).toFixed(2),
             };
         } catch (error) {
             console.error("Dashboard Error:", error);
