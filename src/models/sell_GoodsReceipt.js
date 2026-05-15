@@ -1,18 +1,22 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const SellImportReceiptSchema = new Schema({
+const SellGoodsReceiptSchema = new Schema({
     supplierId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Suppliers',
+        ref: 'suppliers',
         required: false
     },
+    receiptDetails: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'sellReceiptDetail'
+    }],
     total: { //Tổng tiền nhập đơn này
         type: Number,
         required: false
     },
     date: {
-        type: Date(),
+        type: Date,
         required: false
     },
     note: {
@@ -20,6 +24,6 @@ const SellImportReceiptSchema = new Schema({
     },
 });
 
-const SellImportReceiptModel = mongoose.model('sellImportReceipt', SellImportReceiptSchema);
+const SellGoodsReceiptModel = mongoose.model('sellGoodsReceipt', SellGoodsReceiptSchema);
 
-module.exports = SellImportReceiptModel;
+module.exports = SellGoodsReceiptModel;

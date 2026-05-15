@@ -1,9 +1,9 @@
 const { Schema, model, Types } = require('mongoose')
 
-const SellImportDetailSchema = new Schema({
-    modelId: { //Loại máy
+const SellReceiptDetailSchema = new Schema({
+    categoriesId: { //Loại máy
         type: Types.ObjectId,
-        ref: 'modelDevices',
+        ref: 'sellCategories',
         required: true,
     },
     quality: {
@@ -20,6 +20,6 @@ const SellImportDetailSchema = new Schema({
     },
 })
 
-const SellImportDetailModel = model('sellImportDetail', SellImportDetailSchema)
+const SellReceiptDetailModel = model('sellReceiptDetail', SellReceiptDetailSchema)
 
-module.exports = SellImportDetailModel
+module.exports = SellReceiptDetailModel
