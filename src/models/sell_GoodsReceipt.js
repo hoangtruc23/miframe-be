@@ -20,7 +20,8 @@ const SellGoodsReceiptSchema = new Schema({
         required: false
     },
     note: {
-        type: String
+        type: String,
+        required: false
     },
 });
 

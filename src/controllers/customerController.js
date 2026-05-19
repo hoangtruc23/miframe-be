@@ -10,6 +10,14 @@ const customerController = {
             next(error)
         }
     },
+    update: async (req, res, next) => {
+        try {
+            const result = await customerService.update(req.params, req.body)
+            return res.status(200).json(response.success(result))
+        } catch (error) {
+            next(error)
+        }
+    },
 }
 
 module.exports = customerController

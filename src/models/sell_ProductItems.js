@@ -24,7 +24,11 @@ const SellProductItemsSchema = new Schema({
         enum: ['IN_STOCK', 'SOLD', 'WARRANTY'],
         default: 'IN_STOCK'
     }, // Trạng thái: Trong kho, Đã bán, Đang bảo hành
-    dateImport: { type: Date, default: Date.now }
+    dateImport: { type: Date, default: Date.now },
+    note: {
+        type: String,
+        required: false
+    }
 })
 
 const SellProductItemModel = model('sellProductItems', SellProductItemsSchema)

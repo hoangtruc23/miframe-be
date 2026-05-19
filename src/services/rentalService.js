@@ -151,11 +151,8 @@ const rentalService = {
                 queryCondition.status = status;
             }
             if (modelDevice) {
-                // Bước 1: Tìm tất cả thiết bị thuộc modelDevice này
                 const matchedDevices = await DeviceModel.find({ modelId: modelDevice }).select('_id');
                 const matchedDeviceIds = matchedDevices.map(d => d._id);
-
-                // Bước 2: Chỉ lấy các đơn thuê có chứa ít nhất 1 trong các deviceIds đã tìm được
                 queryCondition.deviceIds = { $in: matchedDeviceIds };
             }
             if (phone) {
@@ -166,6 +163,9 @@ const rentalService = {
                 queryCondition.customerId = { $in: customerIds };
             }
 
+            // Tạo mốc thời gian
+            const now = new Date(); // Thời gian hiện tại để check trễ hẹn
+
             const startOfToday = new Date();
             startOfToday.setHours(0, 0, 0, 0);
             const endOfToday = new Date();
@@ -175,27 +175,44 @@ const rentalService = {
                 { $match: queryCondition },
                 {
                     $addFields: {
-                        // 1. Xác định các flag (đúng/sai) cho sự kiện hôm nay
+                        // 1. Xác định các flag cho sự kiện hôm nay
                         isStartToday: {
                             $and: [{ $gte: ["$startRental", startOfToday] }, { $lte: ["$startRental", endOfToday] }]
                         },
                         isEndToday: {
                             $and: [{ $gte: ["$endRental", startOfToday] }, { $lte: ["$endRental", endOfToday] }]
+                        },
+                        // Xác định flag trễ hẹn (Trạng thái đang thuê và endRental nhỏ hơn hiện tại)
+                        isOverdue: {
+                            $and: [
+                                { $eq: ["$status", "rented"] },
+                                { $lt: ["$endRental", now] }
+                            ]
                         }
                     }
                 },
                 {
                     $addFields: {
-                        // 2. Nếu là hôm nay (start hoặc end) thì priority = 0
+                        // 2. Phân cấp độ ưu tiên (Priority)
                         priority: {
-                            $cond: { if: { $or: ["$isStartToday", "$isEndToday"] }, then: 0, else: 1 }
+                            $cond: {
+                                if: { $or: ["$isStartToday", "$isEndToday"] },
+                                then: 0, // Ưu tiên 1: Hôm nay nhận/trả máy
+                                else: {
+                                    $cond: {
+                                        if: "$isOverdue",
+                                        then: 1, // Ưu tiên 2: Trễ hẹn trả máy
+                                        else: 2  // Ưu tiên 3: Các đơn bình thường khác
+                                    }
+                                }
+                            }
                         },
                     }
                 },
                 {
                     $sort: {
-                        priority: 1,
-                        startRental: 1
+                        priority: 1,      // Sắp xếp theo nhóm ưu tiên trước (0 -> 1 -> 2)
+                        startRental: 1    // Trong cùng một nhóm thì sắp xếp theo thời gian bắt đầu tăng dần
                     }
                 }
             ]);
@@ -249,21 +266,42 @@ const rentalService = {
     create: async (rentalData) => {
         try {
             let customer = null;
-            if (rentalData.nameCustomer) {
+            // if (rentalData.phoneCustomer || rentalData.nameCustomer) {
+            //     customer = await CustomerModel.findOneAndUpdate(
+            //         { phone: rentalData.phoneCustomer }, // Filter
+            //         {
+            //             $inc: { times: 1 },             // Increment "times" by 1
+            //             $setOnInsert: {                 // Fields set ONLY if creating new
+            //                 note: rentalData.noteCustomer,
+            //                 name: rentalData.nameCustomer
+            //             }
+            //         },
+            //         {
+            //             new: true,
+            //             upsert: true
+            //         }
+            //     );
+            // }
+
+            if (rentalData.phoneCustomer && rentalData.phoneCustomer.trim() !== "") {
                 customer = await CustomerModel.findOneAndUpdate(
-                    { name: rentalData.nameCustomer }, // Filter
+                    { phone: rentalData.phoneCustomer },
                     {
-                        $inc: { times: 1 },             // Increment "times" by 1
-                        $setOnInsert: {                 // Fields set ONLY if creating new
-                            note: rentalData.noteCustomer,
-                            phone: rentalData.phoneCustomer
+                        $inc: { times: 1 },
+                        $set: {
+                            name: rentalData.nameCustomer.trim(),
+                            note: rentalData.noteCustomer
                         }
                     },
-                    {
-                        new: true,
-                        upsert: true // Create it if it doesn't exist
-                    }
+                    { new: true, upsert: true }
                 );
+            } else if (rentalData.nameCustomer) {
+                customer = await CustomerModel.create({
+                    name: rentalData.nameCustomer.trim(),
+                    phone: "",
+                    note: rentalData.noteCustomer,
+                    times: 1
+                });
             }
 
             const formattedData = {

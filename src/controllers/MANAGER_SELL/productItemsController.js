@@ -2,6 +2,14 @@ const productItemsService = require("../../services/MANAGER_SELL/productItemServ
 const response = require("../../utils/response/response")
 
 const productItemsController = {
+    dashboard: async (req, res, next) => {
+        try {
+            const result = await productItemsService.dashboard()
+            return res.status(200).json(response.success(result))
+        } catch (error) {
+            next(error)
+        }
+    },
     getAll: async (req, res, next) => {
         try {
             const result = await productItemsService.getAll(req.query)

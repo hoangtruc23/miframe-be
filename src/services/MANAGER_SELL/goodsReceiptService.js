@@ -57,7 +57,7 @@ const goodsReceiptService = {
             // Duyệt qua từng loại mặt hàng có trong danh sách details gửi lên từ Frontend
             for (const item of details) {
                 for (let i = 0; i < item.quality; i++) {
-                    const currentSeries = item.series && item.series[i] ? item.series[i].trim() : `AUTO-GENERATED-${Date.now()}-${i}`;
+                    const currentSeries = item.series && item.series[i] ? item.series[i].trim() : '';
 
                     productItemRecords.push({
                         categoriesId: item.categoriesId,

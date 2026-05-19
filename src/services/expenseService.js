@@ -18,7 +18,6 @@ const expenseService = {
         try {
             const result = new ExpenseModel(data)
             const savedDevice = await result.save()
-
             return savedDevice
         } catch (error) {
             throw error

@@ -80,7 +80,6 @@ const deviceService = {
     },
     update: async (params, deviceData) => {
         try {
-            console.log(deviceData)
             const updatedDevice = await DeviceModel.findByIdAndUpdate(params.id, deviceData, { returnDocument: 'after' })
             const updateRentalInfo = await RentalInfoModel.findOneAndUpdate({ deviceId: params.id }, { price: deviceData.price, status: deviceData.status }, { returnDocument: 'after' })
             return { updatedDevice, updateRentalInfo }

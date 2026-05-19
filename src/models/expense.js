@@ -13,6 +13,10 @@ const expenseSchema = new Schema({
         type: Date,
         required: false,
     },
+    payer: {
+        type: String,
+        required: false,
+    },
     note: {
         type: String,
         required: false,
