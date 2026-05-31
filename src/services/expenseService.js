@@ -3,12 +3,15 @@ const ExpenseModel = require("../models/expense");
 const expenseService = {
     getAll: async (query) => {
         try {
-            const { status } = query
+            const { status, payer } = query
             let queryCondition = {};
-            // if (status && status !== '') {
-            //     queryCondition.status = status;
-            // }
-            const rentals = await ExpenseModel.find(queryCondition).sort({ description: 1 })
+            if (status && status !== 'all') {
+                queryCondition.status = status;
+            }
+            if (payer && payer !== 'all') {
+                queryCondition.payer = payer;
+            }
+            const rentals = await ExpenseModel.find(queryCondition).sort({ datePaid: -1 })
             return rentals
         } catch (error) {
             throw error

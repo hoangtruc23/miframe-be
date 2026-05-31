@@ -35,6 +35,10 @@ const rentalScheduleSchema = new Schema({
         type: Number,
         required: false,
     },
+    note: { //Ghi chú
+        type: String,
+        required: false,
+    },
     status: {
         type: String,
         required: true,

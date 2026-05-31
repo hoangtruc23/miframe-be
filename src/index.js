@@ -16,6 +16,14 @@ app.get("/", (req, res) => {
 
 app.use(process.env.BASE_URL, route)
 
+//THROW ERROR TỪ API
+app.use((err, req, res, next) => {
+    // Trả về JSON sạch đẹp cho Frontend nhận được thay vì trang HTML
+    return res.status(400).json({
+        success: false,
+        message: err.message || "Có lỗi xảy ra từ hệ thống!"
+    });
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

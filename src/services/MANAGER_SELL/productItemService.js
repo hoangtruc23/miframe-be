@@ -1,42 +1,60 @@
+const SellOrderModel = require("../../models/sell_Order");
 const SellProductItemModel = require("../../models/sell_ProductItems");
 
 const productItemsService = {
     dashboard: async () => {
         try {
-            const stats = await SellProductItemModel.aggregate([
-                // Bước 1: Lọc ra những mặt hàng đang có trạng thái là 'IN_STOCK' (Trong kho)
-                {
-                    $match: {
-                        status: 'IN_STOCK'
+            // Sử dụng Promise.all để chạy song song 2 câu truy vấn, tối ưu thời gian phản hồi
+            const [stockStats, orderStats] = await Promise.all([
+
+                // 1. Thống kê hàng tồn kho (từ SellProductItemModel)
+                SellProductItemModel.aggregate([
+                    {
+                        $match: {
+                            status: 'IN_STOCK'
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: null,
+                            totalItemsInStock: { $sum: 1 },
+                            totalValueInStock: { $sum: '$priceImport' }
+                        }
                     }
-                },
-                // Bước 2: Nhóm và tính tổng số tiền (priceImport)
-                {
-                    $group: {
-                        _id: null, // null nghĩa là gom hết toàn bộ kho thành 1 nhóm
-                        totalItemsInStock: { $sum: 1 }, // Tổng số lượng máy tồn kho
-                        totalValueInStock: { $sum: '$priceImport' } // Tổng số tiền hàng tồn kho
+                ]),
+
+                // 2. Thống kê tiền lời và doanh thu (từ SellOrderModel)
+                SellOrderModel.aggregate([
+                    {
+                        // Lọc ra các đơn hàng hợp lệ. 
+                        $match: {
+                            status: 'PAID'
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: null, // Gom tất cả các đơn hàng thỏa mãn thành 1 nhóm
+                            totalProfit: { $sum: '$totalProfit' },  // Tổng tiền lời
+                            totalRevenue: { $sum: '$totalAmount' }  // Tổng doanh thu (tính thêm nếu bạn cần hiển thị)
+                        }
                     }
-                },
-                // Bước 3: Định dạng lại kết quả trả về cho đẹp (Tùy chọn)
-                {
-                    $project: {
-                        _id: 0, // Ẩn trường _id
-                        totalItemsInStock: 1,
-                        totalValueInStock: 1
-                    }
-                }
+                ])
             ]);
 
-            // Nếu kho trống (không có hàng IN_STOCK), mảng stats sẽ rỗng []
-            if (stats.length === 0) {
-                return {
-                    totalItemsInStock: 0,
-                    totalValueInStock: 0
-                };
-            }
+            // Xử lý dữ liệu tồn kho (nếu mảng rỗng thì gán giá trị mặc định là 0)
+            const stock = stockStats.length > 0 ? stockStats[0] : { totalItemsInStock: 0, totalValueInStock: 0 };
 
-            return stats[0]; // Trả về object chứa kết quả { totalItemsInStock, totalValueInStock }
+            // Xử lý dữ liệu tiền lời/doanh thu (nếu mảng rỗng thì gán giá trị mặc định là 0)
+            const orders = orderStats.length > 0 ? orderStats[0] : { totalProfit: 0, totalRevenue: 0 };
+
+            // Trả về kết quả tổng hợp cho Dashboard
+            return {
+                totalItemsInStock: stock.totalItemsInStock,
+                totalValueInStock: stock.totalValueInStock,
+                totalProfit: orders.totalProfit,   // <--- Tổng tiền lời bạn cần lấy ở đây
+                totalRevenue: orders.totalRevenue  // Tổng doanh thu 
+            };
+
         } catch (error) {
             throw new Error(error.message);
         }

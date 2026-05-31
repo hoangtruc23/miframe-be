@@ -29,7 +29,6 @@ const rentalController = {
     create: async (req, res, next) => {
         try {
             const result = await rentalService.create(req.body)
-            // res.json({ rentals: result })
             return res.status(200).json(response.success(result))
         } catch (error) {
             next(error)

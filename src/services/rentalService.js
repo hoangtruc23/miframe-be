@@ -126,7 +126,7 @@ const rentalService = {
 
             const yearTotal = result.currentYear.reduce((acc, curr) => acc + curr.total, 0);
             const yearActual = result.currentYear.reduce((acc, curr) => acc + curr.actualCollected, 0);
-
+            const statistical = result.currentYear
             return {
                 monthTotal: Math.round(monthTotal),
                 monthActual: Math.round(monthActual),
@@ -135,35 +135,153 @@ const rentalService = {
                 highestMonth: result.highestMonth,
                 targetPercent: ((monthActual / REVENUE_TARGET) * 100).toFixed(2),
                 targetTotal: ((monthTotal / REVENUE_TARGET) * 100).toFixed(2),
+                statistical: statistical
             };
         } catch (error) {
             console.error("Dashboard Error:", error);
             throw error;
         }
     },
+    // getAll: async (query) => {
+    //     try {
+    //         const { status, modelDevice, phone, toDate, fromDate } = query
+    //         let queryCondition = {};
+    //         if (status === 'active') {
+    //             queryCondition.status = { $ne: "completed" };
+    //         } else if (status && status !== '') {
+    //             queryCondition.status = status;
+    //         }
+    //         if (modelDevice) {
+    //             const matchedDevices = await DeviceModel.find({ modelId: modelDevice }).select('_id');
+    //             const matchedDeviceIds = matchedDevices.map(d => d._id);
+    //             queryCondition.deviceIds = { $in: matchedDeviceIds };
+    //         }
+    //         if (phone) {
+    //             const customers = await CustomerModel.find({
+    //                 phone: { $regex: '^' + phone }
+    //             }).select('_id');
+    //             const customerIds = customers.map(c => c._id);
+    //             queryCondition.customerId = { $in: customerIds };
+    //         }
+
+    //         // Tạo mốc thời gian
+    //         const now = new Date(); // Thời gian hiện tại để check trễ hẹn
+
+    //         const startOfToday = new Date();
+    //         startOfToday.setHours(0, 0, 0, 0);
+    //         const endOfToday = new Date();
+    //         endOfToday.setHours(23, 59, 59, 999);
+
+    //         const rentals = await RentalScheduleModel.aggregate([
+    //             { $match: queryCondition },
+    //             {
+    //                 $addFields: {
+    //                     // 1. Xác định các flag cho sự kiện hôm nay
+    //                     isStartToday: {
+    //                         $and: [{ $gte: ["$startRental", startOfToday] }, { $lte: ["$startRental", endOfToday] }]
+    //                     },
+    //                     isEndToday: {
+    //                         $and: [{ $gte: ["$endRental", startOfToday] }, { $lte: ["$endRental", endOfToday] }]
+    //                     },
+    //                     // Xác định flag trễ hẹn (Trạng thái đang thuê và endRental nhỏ hơn hiện tại)
+    //                     isOverdue: {
+    //                         $and: [
+    //                             { $eq: ["$status", "rented"] },
+    //                             { $lt: ["$endRental", now] }
+    //                         ]
+    //                     }
+    //                 }
+    //             },
+    //             {
+    //                 $addFields: {
+    //                     // 2. Phân cấp độ ưu tiên (Priority)
+    //                     priority: {
+    //                         $cond: {
+    //                             if: { $or: ["$isStartToday", "$isEndToday"] },
+    //                             then: 0, // Ưu tiên 1: Hôm nay nhận/trả máy
+    //                             else: {
+    //                                 $cond: {
+    //                                     if: "$isOverdue",
+    //                                     then: 1, // Ưu tiên 2: Trễ hẹn trả máy
+    //                                     else: 2  // Ưu tiên 3: Các đơn bình thường khác
+    //                                 }
+    //                             }
+    //                         }
+    //                     },
+    //                 }
+    //             },
+    //             {
+    //                 $sort: {
+    //                     priority: 1,      // Sắp xếp theo nhóm ưu tiên trước (0 -> 1 -> 2)
+    //                     startRental: 1    // Trong cùng một nhóm thì sắp xếp theo thời gian bắt đầu tăng dần
+    //                 }
+    //             }
+    //         ]);
+
+    //         const populatedRentals = await RentalScheduleModel.populate(rentals, [
+    //             { path: 'deviceIds' },
+    //             { path: 'customerId' }
+    //         ]);
+    //         return populatedRentals;
+    //     } catch (error) {
+    //         throw error
+    //     }
+    // },
     getAll: async (query) => {
         try {
-            const { status, modelDevice, phone } = query
+            const { status, modelDevice, search, toDate, fromDate } = query;
             let queryCondition = {};
+
             if (status === 'active') {
                 queryCondition.status = { $ne: "completed" };
             } else if (status && status !== '') {
                 queryCondition.status = status;
             }
+
             if (modelDevice) {
                 const matchedDevices = await DeviceModel.find({ modelId: modelDevice }).select('_id');
                 const matchedDeviceIds = matchedDevices.map(d => d._id);
                 queryCondition.deviceIds = { $in: matchedDeviceIds };
             }
-            if (phone) {
+
+            if (search) {
                 const customers = await CustomerModel.find({
-                    phone: { $regex: '^' + phone }
+                    $or: [
+                        { name: { $regex: search, $options: 'i' } },
+                        { phone: { $regex: '^' + search } }
+                    ]
                 }).select('_id');
                 const customerIds = customers.map(c => c._id);
                 queryCondition.customerId = { $in: customerIds };
             }
 
-            // Tạo mốc thời gian
+            // ==========================================
+            // XỬ LÝ MẶC ĐỊNH LỌC THEO THÁNG HIỆN TẠI
+            // ==========================================
+            let startFilter, endFilter;
+
+            if (fromDate && toDate) {
+                // Nếu client truyền khoảng thời gian cụ thể thì ưu tiên dùng
+                startFilter = new Date(fromDate);
+                endFilter = new Date(toDate);
+            } else {
+                // Ngược lại, thiết lập mặc định từ đầu tháng đến cuối tháng hiện tại
+                const now = new Date();
+
+                // Đầu tháng hiện tại (Ngày 1 lúc 00:00:00.000)
+                startFilter = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+
+                // Cuối tháng hiện tại (Ngày cuối cùng lúc 23:59:59.999)
+                // Truyền tham số ngày là 0 ở tháng tiếp theo sẽ trả về ngày cuối cùng của tháng này
+                endFilter = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+            }
+
+            // Lọc các đơn có thời gian thuê nằm trong hoặc giao thoa với khoảng thời gian filter
+            // Thông thường, ta sẽ lọc dựa trên thời gian bắt đầu tạo đơn hoặc thời gian nhận máy nằm trong tháng
+            queryCondition.startRental = { $gte: startFilter, $lte: endFilter };
+            // ==========================================
+
+            // Tạo mốc thời gian để tính toán flag ưu tiên
             const now = new Date(); // Thời gian hiện tại để check trễ hẹn
 
             const startOfToday = new Date();
@@ -223,7 +341,7 @@ const rentalService = {
             ]);
             return populatedRentals;
         } catch (error) {
-            throw error
+            throw error;
         }
     },
     getRentalToday: async () => {
@@ -302,6 +420,24 @@ const rentalService = {
                     note: rentalData.noteCustomer,
                     times: 1
                 });
+            }
+
+            // 2. CHECK TRÙNG LỊCH: Nếu tìm/tạo được khách hàng, kiểm tra xem họ có đơn nào đang thuê hoặc hẹn lịch không
+            if (customer) {
+                const existingRental = await RentalScheduleModel.findOne({
+                    customerId: customer._id,
+                    status: {
+                        $in: [
+                            constant.STATUS_RENTAL.rented.value,     // Đang thuê
+                            constant.STATUS_RENTAL.appointment.value,  // Hẹn lịch / Đặt trước (Bạn đổi lại key theo constant của bạn nhé)
+                        ]
+                    }
+                });
+
+                if (existingRental) {
+                    // Ném ra lỗi để phía Controller bắt được và trả về client
+                    throw new Error("Khách hàng này hiện đang có đơn thuê hoặc lịch hẹn chưa hoàn thành!");
+                }
             }
 
             const formattedData = {
