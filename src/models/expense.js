@@ -5,7 +5,7 @@ const expenseSchema = new Schema({
         type: String,
         required: true,
     },
-    total: {
+    amount: {
         type: Number,
         required: true,
     },
@@ -17,10 +17,16 @@ const expenseSchema = new Schema({
         type: String,
         required: false,
     },
-    type: { //Loại chi phí
+    transactionType: {
+        type: String,
+        required: true,
+        enum: ['income', 'expense'], // income = Thu vào, expense = Chi ra
+    },
+    category: { //Loại chi phí
         type: String,
         required: true,
         enum: [
+            'revenue',      // Thu nhập (Doanh thu bán hàng, dịch vụ...)
             'salary',        // Chi phí nhân sự (lương nhân viên, công tự làm)
             'marketing',     // Chi phí quảng cáo (Facebook/TikTok Ads, SEO website)
             'maintenance',   // Chi phí bảo dưỡng và khấu hao thiết bị
@@ -36,6 +42,7 @@ const expenseSchema = new Schema({
     status: {
         type: String,
         required: true,
+        enum: ['pending', 'paid']
     },
 })
 
