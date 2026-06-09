@@ -1,4 +1,5 @@
 const { Schema, model, Types } = require('mongoose')
+const ExpenseModel = require("../models/expense")
 
 const rentalScheduleSchema = new Schema({
     deviceIds: [{
